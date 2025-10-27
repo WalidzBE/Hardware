@@ -8,7 +8,7 @@ from pprint import pprint
 # N = 8
 # M = 1
 # Number of iterations = (π/4) * sqrt(N/M) = (π/4) * sqrt(8/1) = (π/4) * sqrt(8)
-# which is approximately 2.22, so we round to 2 iterations
+# which is approximately 2.22, so we round to 3 iterations
 # #
 
 #Calculating the marking state

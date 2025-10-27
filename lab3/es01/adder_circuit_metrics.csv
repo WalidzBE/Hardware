@@ -1,0 +1,10 @@
+backend,optimization_level,circuit_depth,gate_counts,fidelities_with_not_compiled_circuit
+original,original,11,"{""cx"": 10, ""t"": 4, ""tdg"": 4, ""x"": 2, ""h"": 2, ""s"": 1}",1.0
+TranspilerRyRxRzCX,0,13,"{""cx"": 10, ""rz"": 9, ""rx"": 4, ""ry"": 2}",0.9999999999999993
+TranspilerRyRxRzCX,1,13,"{""cx"": 10, ""rz"": 9, ""rx"": 4, ""ry"": 2}",0.9999999999999993
+TranspilerRyRxRzCX,2,13,"{""cx"": 10, ""rz"": 9, ""rx"": 4, ""ry"": 2}",0.9999999999999993
+TranspilerRyRxRzCX,3,13,"{""cx"": 10, ""rz"": 9, ""rx"": 4, ""ry"": 2}",0.9999999999999993
+fake_guadalupe,0,19,"{""cx"": 16, ""rz"": 13, ""x"": 2, ""sx"": 2}",0.0
+fake_guadalupe,1,19,"{""cx"": 16, ""rz"": 13, ""sx"": 2, ""x"": 2}",0.0
+fake_guadalupe,2,18,"{""cx"": 16, ""rz"": 12, ""sx"": 2, ""x"": 2}",0.0
+fake_guadalupe,3,18,"{""cx"": 16, ""rz"": 12, ""x"": 2, ""sx"": 2}",0.0

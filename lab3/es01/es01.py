@@ -3,18 +3,32 @@ from qiskit.quantum_info import Statevector
 from qiskit.providers.basic_provider import BasicProvider
 from qiskit_ibm_runtime.fake_provider import FakeGuadalupeV2
 from itertools import product
+import json
 import numpy as np
+import pandas as pd
 
 def import_circuit_from_qasm(file_path):
     return QuantumCircuit.from_qasm_file(file_path)
 
 def print_circuit_info(qc):
-        #printing the circuit
+    # printing the circuit
     print(qc)
 
     # printing depth and gate count
-    print(f"Depth: {qc.depth()}") 
-    print(f"Gate count: {qc.count_ops()}")
+    depth = qc.depth()
+    gate_counts = qc.count_ops()
+    print(f"Depth: {depth}")
+    print(f"Gate count: {gate_counts}")
+
+    # # if qc is transpiled return the mapping and logical to physical qubit mapping
+    # if qc.layout is not None:
+    #     final_layout = qc.layout.final_layout
+    #     print("Final layout (logical to physical qubit mapping):", final_layout)
+    #     mapping = qc.layout.initial_layout
+    #     print("Initial layout (logical to physical qubit mapping):", mapping.get_physical_bits())
+    #     # filter "q" Qubits only
+        
+    return {"depth": depth, "gate_counts": dict(gate_counts)}
 
 def simulate_circuit_statevector(qc):
     sv = Statevector.from_instruction(qc)
@@ -41,10 +55,13 @@ def simulate_circuit_basic_provider(qc):
     # Calculate probabilities, including zero counts
     total_shots = sum(counts.values())
     probabilities = [counts.get(state, 0) / total_shots for state in all_states]
-    print(probabilities)
+    # print("Probabilities:", probabilities)
+    return probabilities
 
 def print_fidelity_statevectors(sv1,sv2):
-    print(np.abs(sv1.inner(sv2)))
+    fidelity = np.abs(sv1.inner(sv2))
+    print(fidelity)
+    return fidelity
 
 def get_backend_properties(backend):
     coupling_map = backend.configuration().coupling_map
@@ -82,28 +99,67 @@ def get_backend_properties(backend):
     native_gates = backend.configuration().basis_gates
     print("Native gates (basis gates):", native_gates)
 
-
 #Start of the main code
 
-# backend, optimization_level, circuit depth, gate counts, fidelities_with_not_compiled_circuit
-index = ["backend", "optimization_level", "circuit_depth", "gate_counts", "fidelities_with_not_compiled_circuit"]
-data = {}
+index = [
+    "backend",
+    "optimization_level",
+    "circuit_depth",
+    "gate_counts",
+    "fidelities_with_not_compiled_circuit",
+]
+data = {key: [] for key in index}
 
 
 qc = import_circuit_from_qasm("lab3/qasm_files/adder_small.qasm")
 no_comp_sv = simulate_circuit_statevector(qc)
-simulate_circuit_basic_provider(qc)
-print_circuit_info(qc)
+base_probabilities = simulate_circuit_basic_provider(qc)
+base_circuit_info = print_circuit_info(qc)
+
+
+data["backend"].append("original")
+data["optimization_level"].append("original")
+data["circuit_depth"].append(base_circuit_info["depth"])
+data["gate_counts"].append(json.dumps(base_circuit_info["gate_counts"], default=str))
+data["fidelities_with_not_compiled_circuit"].append(1.0)
 
 for optimization_level in range(4):
     qc_t = transpile(qc, basis_gates=['id', 'ry', 'rx', 'rz', 'cx'], optimization_level=optimization_level)
     print(f"Optimization Level {optimization_level}:")
-    print_circuit_info(qc_t)
+    circuit_info = print_circuit_info(qc_t)
     print()
     comp_sv = simulate_circuit_statevector(qc_t)
-    print_fidelity_statevectors(no_comp_sv, comp_sv)
+    measurement_probabilities = simulate_circuit_basic_provider(qc_t)
+    fidelity = print_fidelity_statevectors(no_comp_sv, comp_sv)
+
+    data["backend"].append("TranspilerRyRxRzCX")
+    data["optimization_level"].append(optimization_level)
+    data["circuit_depth"].append(circuit_info["depth"])
+    data["gate_counts"].append(json.dumps(circuit_info["gate_counts"], default=str))
+    data["fidelities_with_not_compiled_circuit"].append(float(fidelity))
+
+device_backend = FakeGuadalupeV2()
 
 print("\n--- Backend Properties ---")
-backend = FakeGuadalupeV2()
-get_backend_properties(backend)
+get_backend_properties(device_backend)
 
+
+for optimization_level in range(4):
+    qc_t = transpile(qc, backend=device_backend, optimization_level=optimization_level)
+    print(f"Optimization Level {optimization_level}:")
+    circuit_info = print_circuit_info(qc_t)
+    print()
+    comp_sv = simulate_circuit_statevector(qc_t)
+    measurement_probabilities = simulate_circuit_basic_provider(qc_t)
+    # print_fidelity_statevectors(no_comp_sv, comp_sv)
+    final_layout = qc_t.layout.final_layout
+    print("qubits:", final_layout)
+    data["backend"].append(device_backend.name)
+    data["optimization_level"].append(optimization_level)
+    data["circuit_depth"].append(circuit_info["depth"])
+    data["gate_counts"].append(json.dumps(circuit_info["gate_counts"], default=str))
+    data["fidelities_with_not_compiled_circuit"].append(float(0)) #todo change this to fidelity value
+
+df = pd.DataFrame(data)
+df.to_csv("lab3/es01/adder_circuit_metrics.csv", index=False)
+print("Exported circuit metrics to lab3/es01/adder_circuit_metrics.csv")

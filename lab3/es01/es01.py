@@ -57,7 +57,7 @@ def simulate_circuit_basic_provider(qc):
     # Calculate probabilities, including zero counts
     total_shots = sum(counts.values())
     probabilities = [counts.get(state, 0) / total_shots for state in all_states]
-    print("Probabilities:", probabilities)
+    # print("Probabilities:", probabilities)
     return probabilities
 
 def reorder_qubits(qc_t):

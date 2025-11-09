@@ -145,22 +145,6 @@ def get_backend_properties(backend):
     native_gates = backend.configuration().basis_gates
     print("Native gates (basis gates):", native_gates)
 
-#Start of the main code
-
-RESULT_COLUMNS = [
-    "qasm_file",
-    "backend",
-    "optimization_level",
-    "circuit_depth",
-    "gate_counts",
-    "fidelities_with_not_compiled_circuit",
-]
-
-CURRENT_DIR = Path(__file__).resolve().parent
-QASM_DIR = CURRENT_DIR.parent / "qasm_files"
-OUTPUT_PATH = CURRENT_DIR / "es01.csv"
-
-
 def collect_metrics_for_qasm(qasm_path):
     print("\n" + "-" * 80)
     print(f"Processing QASM file: {qasm_path.name}")
@@ -228,7 +212,6 @@ def collect_metrics_for_qasm(qasm_path):
 
     return data_rows
 
-
 def write_metrics(grouped_results):
     rows = []
     for qasm_name, data_rows in grouped_results:
@@ -244,13 +227,29 @@ def write_metrics(grouped_results):
     df.to_csv(OUTPUT_PATH, index=False)
     print(f"Exported circuit metrics to {OUTPUT_PATH}")
 
+if __name__ == "__main__":
+    #Start of the main code
 
-qasm_files = sorted(QASM_DIR.glob("*.qasm"))
-if not qasm_files:
-    raise FileNotFoundError(f"No .qasm files found in {QASM_DIR}")
+    RESULT_COLUMNS = [
+        "qasm_file",
+        "backend",
+        "optimization_level",
+        "circuit_depth",
+        "gate_counts",
+        "fidelities_with_not_compiled_circuit",
+    ]
 
-results = []
-for qasm_file in qasm_files:
-    results.append((qasm_file.name, collect_metrics_for_qasm(qasm_file)))
+    CURRENT_DIR = Path(__file__).resolve().parent
+    QASM_DIR = CURRENT_DIR.parent / "qasm_files"
+    OUTPUT_PATH = CURRENT_DIR / "es01.csv"
 
-write_metrics(results)
+
+    qasm_files = sorted(QASM_DIR.glob("*.qasm"))
+    if not qasm_files:
+        raise FileNotFoundError(f"No .qasm files found in {QASM_DIR}")
+
+    results = []
+    for qasm_file in qasm_files:
+        results.append((qasm_file.name, collect_metrics_for_qasm(qasm_file)))
+
+    write_metrics(results)

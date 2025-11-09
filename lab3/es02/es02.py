@@ -1,3 +1,4 @@
+
 from qiskit import QuantumCircuit
 from qiskit_ibm_runtime.fake_provider import FakeGuadalupeV2
 from math import pi
@@ -5,10 +6,11 @@ from itertools import product
 import numpy as np
 from qiskit.quantum_info import Statevector
 from collections import deque
+import matplotlib.pyplot as plt
 
 def translating_to_guadalupe(qc_in: QuantumCircuit) -> QuantumCircuit:
     """Traduce un circuito in gate nativi di FakeGuadalupeV2."""
-
+    
     # Inizializza backend e stampa i gate nativi
     backend = FakeGuadalupeV2()
     native_gates = backend.configuration().basis_gates
@@ -16,7 +18,7 @@ def translating_to_guadalupe(qc_in: QuantumCircuit) -> QuantumCircuit:
 
     # Crea un circuito di output con lo stesso numero di qubit
     qc_out = QuantumCircuit(qc_in.num_qubits)
-
+    
     # Itera su tutte le istruzioni del circuito
     for inst_data in qc_in.data:
         inst = inst_data.operation
@@ -28,7 +30,7 @@ def translating_to_guadalupe(qc_in: QuantumCircuit) -> QuantumCircuit:
         # --------------------
         if name in native_gates:
             qc_out.append(inst, inst_data.qubits, inst_data.clbits)
-
+        
         # --------------------
         # Gate non nativi
         # --------------------
@@ -37,9 +39,9 @@ def translating_to_guadalupe(qc_in: QuantumCircuit) -> QuantumCircuit:
             qc_out.rz(pi/2, q)
             qc_out.sx(q)
             qc_out.rz(pi/2, q)
-
-
-
+          
+             
+                    
         elif name == 's':
             qc_out.rz(pi/2, qargs[0])
         elif name in ['sdg', 's_dg', 's†']:
@@ -127,9 +129,14 @@ def translating_to_guadalupe(qc_in: QuantumCircuit) -> QuantumCircuit:
 
     return qc_out
 
+
 #are neighbours?
 def are_connected(p1, p2, coupling_map):
     return [p1, p2] in coupling_map or [p2, p1] in coupling_map
+        
+from collections import deque
+from qiskit import QuantumCircuit
+from qiskit_ibm_runtime.fake_provider import FakeGuadalupeV2
 
 def find_shortest_path(coupling_map, start, target):
     """Trova il cammino più corto tra due qubit fisici nella coupling map (BFS)."""
@@ -166,17 +173,19 @@ def reverse_final_swaps(qc_mapped):
         qc_reverse.swap(a,b)
     return qc_mapped.compose(qc_reverse)
 
+
+
 def swaps_management(qc_in: QuantumCircuit) -> QuantumCircuit:
     """Gestisce le SWAP in base alla topologia di FakeGuadalupeV2 con routing multiplo."""
-
+    
     backend = FakeGuadalupeV2()
-    coupling_map = backend.configuration().coupling_map
+    coupling_map = backend.configuration().coupling_map  
     num_qubits = qc_in.num_qubits
 
     logical_to_physical = list(range(num_qubits))  # mappatura iniziale 1:1
     num_phys = len(backend.configuration().coupling_map) + 1  # oppure 16
     qc_out = QuantumCircuit(backend.configuration().num_qubits)
-
+    
     print("Mappatura iniziale logico→fisico:", logical_to_physical)
 
     for inst_data in qc_in.data:
@@ -232,88 +241,108 @@ def swaps_management(qc_in: QuantumCircuit) -> QuantumCircuit:
         print(f"Logico q[{i}] → Fisico {p}")
 
     return qc_out
+          
+           
+#*******************************************
+#MAIN
+#****************************************
 
 
-if __name__ == "__main__":
-    #*******************************************
-    #MAIN
-    #****************************************
+# caricare un circuito da file QASM
+qc = QuantumCircuit.from_qasm_file("alu-bdd_288.qasm")
 
-    # file_path = "alu-bdd_288.qasm"
-    file_path = "lab3/qasm_files/alu-bdd_288.qasm"
-
-    # caricare un circuito da file QASM
-    qc = QuantumCircuit.from_qasm_file(file_path)
-
-    print("Circuito originale:")
-    print(qc)
-    print("Depth:", qc.depth())
-    print("Gate count:", qc.count_ops())
+print("Circuito originale:")
+print(qc)
+print("Depth:", qc.depth())
+print("Gate count:", qc.count_ops())
 
 
-    qc_native = translating_to_guadalupe(qc)
+qc_native = translating_to_guadalupe(qc)
 
 
-    print(qc_native)
-    print(qc_native.count_ops())
+print(qc_native)
+print(qc_native.count_ops())   
 
 
+   
+#*************************************** 
+#TRIVIAL MAPPING
+#***************************
 
-    #***************************************
-    #TRIVIAL MAPPING
-    #***************************
+backend = FakeGuadalupeV2()  
 
-    backend = FakeGuadalupeV2()
-
-    coupling_map = backend.configuration().coupling_map
-    print(coupling_map)
-
-
-    #**************************************************
-    #SWAP MANAGEMENT
-    #****************************************
-    qc_mapped = swaps_management(qc_native)
-
-    print(qc_mapped)
+coupling_map = backend.configuration().coupling_map
+print(coupling_map)
 
 
-    #*********************************************************
-    #FIDELITY CONTROL
-    #***********************************************
-    def get_probabilities(qc):
-        qc_m = qc.copy()
-        qc_m.measure_all()
-        result = backend.run(qc_m).result()
-        counts = result.get_counts()
-        num_qubits = qc.num_qubits
-        all_states = [''.join(state) for state in product('01', repeat=num_qubits)]
-        total = sum(counts.values())
-        return np.array([counts.get(s, 0) / total for s in all_states])
+#**************************************************
+#SWAP MANAGEMENT
+#****************************************
+qc_mapped = swaps_management(qc_native)
 
-    # 1. circuito logico originale
-    qc_original = qc
+print(qc_mapped)
 
-    # 3. circuito mappato (SWAP management)
-    qc_mapped = swaps_management(qc_native)
+
+#*********************************************************
+#FIDELITY CONTROL
+#***********************************************
+def get_probabilities(qc):
+    qc_m = qc.copy()
+    qc_m.measure_all()
+    result = backend.run(qc_m).result()
+    counts = result.get_counts()
+    num_qubits = qc.num_qubits
+    all_states = [''.join(state) for state in product('01', repeat=num_qubits)]
+    total = sum(counts.values())
+    return np.array([counts.get(s, 0) / total for s in all_states])
+
+# 1. circuito logico originale
+qc_original = qc
+
+# 3. circuito mappato (SWAP management)
+qc_mapped = swaps_management(qc_native)
 
 
 
-    # 4. probabilità di misura
-    p_orig = get_probabilities(qc_original)
-    p_final = get_probabilities(qc_native)
+# 4. probabilità di misura
+p_orig = get_probabilities(qc_original)
+p_final = get_probabilities(qc_native)
 
 
-    # 5. calcola la fidelity
+# 5. calcola la fidelity
 
-    #extend original circuit
-    num_phys = backend.configuration().num_qubits  # 16
-    qc_original_extended = QuantumCircuit(num_phys)
-    qc_original_extended.compose(qc_original, inplace=True)
-
-
-    qc_mapped_aligned = reverse_final_swaps(qc_mapped)
+#extend original circuit
+num_phys = backend.configuration().num_qubits  # 16
+qc_original_extended = QuantumCircuit(num_phys)
+qc_original_extended.compose(qc_original, inplace=True)
 
 
-    F = abs(Statevector.from_instruction(qc_original_extended)
-            .inner(Statevector.from_instruction(qc_mapped_aligned)))**2
-    print("Fidelity (statevector):", F)
+qc_mapped_aligned = reverse_final_swaps(qc_mapped)
+
+
+
+#qc_mapped_aligned.draw("mpl")
+#plt.show()
+
+
+F = abs(Statevector.from_instruction(qc_original_extended)
+        .inner(Statevector.from_instruction(qc_mapped_aligned)))**2
+print("Fidelity (statevector):", F)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

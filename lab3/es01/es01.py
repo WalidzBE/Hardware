@@ -158,7 +158,7 @@ RESULT_COLUMNS = [
 
 CURRENT_DIR = Path(__file__).resolve().parent
 QASM_DIR = CURRENT_DIR.parent / "qasm_files"
-OUTPUT_PATH = CURRENT_DIR / "results.csv"
+OUTPUT_PATH = CURRENT_DIR / "es01.csv"
 
 
 def collect_metrics_for_qasm(qasm_path):

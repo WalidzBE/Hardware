@@ -113,11 +113,11 @@ nx.draw(
     pos=nx.spring_layout(G, seed=42),
     with_labels=True,
     node_color=node_colors,
-    cmap="Pastel1",  # 🎨 PALETTE PIÙ SOFT
+    cmap="Pastel1",
     node_size=950,
     font_size=16,
     font_weight="bold",
-    edge_color="#555555",  # grigio scuro elegante
+    edge_color="#555555",
 )
 
 plt.title("Colorazione del grafo (Simulated Annealing)", fontsize=18, fontweight="bold")

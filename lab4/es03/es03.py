@@ -13,40 +13,27 @@ def decode_state(state, objects, Wmax):
 
 def qubo_formulation_luggage_problem(num_objects, max_weight,objects):
 
-    # ===============================
-    # 2. Define binary decision vars
-    # ===============================
+    # Define binary decision vars
     x = [boolean_var(f"x{i}") for i in range(len(objects))]
 
-    # ===============================
-    # 3. Define slack variable (binarized)
-    # ===============================
-    # Range of s: [0, max_weight]
+    # Define slack variable (binarized)
     num_s_bits = math.ceil(math.log2(max_weight + 1))
     s = [boolean_var(f"s{i}") for i in range(num_s_bits)]
     s_value = sum((2 ** i) * s[i] for i in range(num_s_bits))
 
-    # ===============================
-    # 4. Objective: maximize preferences
-    # ===============================
+    # Objective: maximize preferences
     # QUBO minimizes, so we use the negative
     P = sum(-p * x[i] for i, (p, _) in enumerate(objects))
 
-    # ===============================
-    # 5. Constraint penalty: (Σ w_i x_i + s - Wmax)^2
-    # ===============================
+    # Constraint penalty: (Σ w_i x_i + s - Wmax)^2
     λ = 10 * max(p for p, _ in objects)
     weight_expr = sum(w * x[i] for i, (_, w) in enumerate(objects)) + s_value - max_weight
     constraint_penalty = λ * (weight_expr ** 2)
 
-    # ===============================
-    # 6. Combine into total Hamiltonian
-    # ===============================
+    # Combine into total Hamiltonian
     H = P + constraint_penalty
 
-    # ===============================
-    # 7. Convert to QUBO and solve
-    # ===============================
+    # Convert to QUBO and solve
     qubo = H.to_qubo()
     # anneal_qubo_results = anneal_qubo(qubo, num_anneals=500)
     anneal_qubo_results= anneal_qubo(qubo, num_anneals=500)

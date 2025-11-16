@@ -44,7 +44,6 @@ def build_qubo_from_clauses(clauses, n_vars, alpha=20, lambda_penalty=5):
     for c_idx, clause in enumerate(clauses):
         l1, l2, l3 = [literal_expr(x, l) for l in clause]
 
-        # Auxiliary variable for this clause
         y = boolean_var(f"y{c_idx+1}")
 
         # Clause penalty (unsatisfied)
@@ -57,7 +56,6 @@ def build_qubo_from_clauses(clauses, n_vars, alpha=20, lambda_penalty=5):
 
     # Convert to QUBO and solve
     qubo = H_total.to_qubo()
-    # anneal_qubo_results = anneal_qubo(qubo, num_anneals=500)
     anneal_qubo_results= anneal_qubo(qubo, num_anneals=500)
 
     # Sort by energy (value)

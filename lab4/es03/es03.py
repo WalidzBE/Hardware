@@ -25,7 +25,7 @@ def qubo_formulation_luggage_problem(num_objects, max_weight,objects):
     # QUBO minimizes, so we use the negative
     P = sum(-p * x[i] for i, (p, _) in enumerate(objects))
 
-    # Constraint penalty: (Σ w_i x_i + s - Wmax)^2
+    # Constraint penalty
     λ = 10 * max(p for p, _ in objects)
     weight_expr = sum(w * x[i] for i, (_, w) in enumerate(objects)) + s_value - max_weight
     constraint_penalty = λ * (weight_expr ** 2)
@@ -35,7 +35,6 @@ def qubo_formulation_luggage_problem(num_objects, max_weight,objects):
 
     # Convert to QUBO and solve
     qubo = H.to_qubo()
-    # anneal_qubo_results = anneal_qubo(qubo, num_anneals=500)
     anneal_qubo_results= anneal_qubo(qubo, num_anneals=500)
 
     # Sort by energy (value)
